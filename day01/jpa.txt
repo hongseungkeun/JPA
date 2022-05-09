@@ -1,0 +1,132 @@
+ORM(Object Relational Mapping)
+	객체와 관계형 데이터베이스의 데이터를 자동으로 매핑(연결)해주는 기술이다.
+	Hibernate, EclipseLink, DataNucleus 등이 있다.
+
+JPA(Java Persistence API)
+	여러 ORM기술의 표준이며, 구현되지 않은 인터페이스를 모아둔 것이다.
+	JPA를 구현한 기술이 바로 ORM 프레임워크
+
+Spring Data JPA
+	개발자가 JPA를 더 쉽고 편하게 사용할 수 있도록 도와주며, JPA를 한 단계 더 추상화 시켰다.
+	이 때 Spring Data JPA는 Repository라는 인터페이스를 제공함으로써 정해진 규칙대로
+	메소드를 사용하면, Spring이 알아서 적합한 쿼리를 날려준다.
+	JPA에서 Repository는 MyBatis에서 DAO와 같은 역할을 하며, DB 접근자라고 말할 수 있다.
+
+Hibernate
+	JPA를 구현한 객체이며,
+	Repository 인터페이스 사용 시
+	Spring Data JPA > JPA > Hibernate > JDBC > RDBMS 순으로 작업이 진행된다.
+
+JPA 특징
+	- 생산성
+		JPA를 사용하면 반복되었던 JDBC 작업을 JPA가 대신 처리해준다.
+		데이터베이스 중심의 설계 패러다임을 객체 중심의 설계로 바꿀 수 있다.
+
+	- 유지보수
+		JPA가 SQL을 대신 작성해주기 때문에 유지보수에 필요한 소스코드가 줄어진다.
+
+	- 패러다임의 불일치 해결
+		상속, 연관관계, 객체, 그래프 탐색, 비교 등과 같은 불일치 문제를 해결한다.
+
+	- 성능
+		이전에 조회했던 SELECT문을 한 번 더 조회하면 JDBC에서는 두 번 조회를 하지만
+		JPA에서는 이전에 조회했던 객체를 재사용한다.
+
+	- 데이터 접근 추상화
+		RDBMS의 종류가 많기 때문에 기술을 변경하면 SQL문도 변경해야 한다.
+		하지만 JPA에서는 데이터 접근 SQL을 추상화해놨기 때문에 연결한 RDB에 맞춰서
+		쿼리를 작성해준다.
+
+	- 밴더 독립성
+		밴더란 판매업체 또는 상품 공급자이다. Microsoft, HP 등의 기업을 밴더 기업이라고 한다.
+		RDBMS의 종류에 상관없이 추상화된 객체를 사용하기 때문에 어떤 밴더의 RDB를 사용하더라도
+		해당 SQL에 의존하지 않고 독립적으로 사용가능하다. 이를 밴더 독립성이라고 한다.
+
+	- 표준
+		JPA는 ORM 기술 표준이다. 다른 기술을 반영해야 할 때에는 손쉽게 해당 기술로 변경이 가능하다.
+
+[SQL을 직접 다룰 때 발생하는 문제점]
+ 1. 반복되는 작업
+	- SQL 작성
+	- JDBC API를 사용해서 SQL 실행
+	- 조회 결과를 모델 객체에 대입
+
+ 2. SQL에 의존적인 개발
+	각 객체 사용 여부는 SQL에 따라 변할 수 있다.
+	항상 DAO에서 SQL이 실행되는 지를 확인해야 한다.
+
+ 3. JPA로 해결
+	객체를 DB에 저장하고 관리할 때, 개발자가 직접 SQL을 작성하지 않고
+	JPA가 제공하는 API를 사용한다. JPA에서 제공하는 메소드를 호출하면
+	적절한 SQL을 생성하여 DB에 전달해준다.
+
+	- 저장(insert)
+		repository.save(member);
+		해당 객체를 DB에 저장한다.
+		
+		INSERT SQL을 생성하여 RDB에 전달해준다.
+
+	- 조회(select)
+		String memberId = "hds";
+		Member member = repository.findById(memberId).get();
+		Member member = repository.getById(memberId);
+
+
+		매핑 정보를 확인한 후 적절한 SELECT SQL을 생성하여 DB에 전달하고
+		그 결과를 Member객체로 전달한다.
+
+	- 수정(update)
+		Member member = repository.findById(memberId).get();
+		member.updateMemberName("홍길동");
+		repository.save(member);
+	
+		객체 조회 후 값을 변경하면 UPDATE SQL이 DB에 전달된다.
+
+[패러다임 불일치]
+	- 연관된 객체 조회
+		Board 테이블에서 boardId로 조회한 대표 이미지 정보 조회
+		Board board = repository.getById(boardId);
+		AttachFile attachFile = board.getAttachFile();
+
+		연관된 객체를 사용할 때 적절한 SELECT SQL을 실행한다.
+
+	- 그래프 탐색
+		* JDBC API
+		BoardDAO boardDao = new BoardDAO();
+		boardDao.getAttachFile(); //attachFile을 정확히 가져왔는 지 코드만 보고 알 수 없다.
+
+		* JPA
+		board.getAttachFile(); // 객체를 사용하는 시점에서 SELECT문이 실행되기 때문에 신뢰할 수 있다.
+
+	- 비교
+		Member member1 = memberDao.getMember(memberId);
+		Member member2 = memberDao.getMember(memberId);
+		member1 == member2 -> false
+
+		데이터베이스는 같은 로우를 조회했지만 동일성 비교는 실패한다.
+
+		Member member1 = list.get(0);
+		Member member2 = list.get(0);
+		member1 == member2 -> true
+
+		객체를 컬렉션에 보관하면 동일성 비교에 성공한다.
+
+	* FK를 그대로 필드에 적용하면 객체지향 언어 관점에서는 관련없는 필드가 추가된 것이며, 객체지향의 특징을 잃어버리게 된다.
+	  위와 같이 JPA를 사용하게 되면, 필드 내에 FK가 아닌 연관된 객체를 포함시키기 때문에 객체지향의 특징을 그대로 가져갈 수 있다.
+	* 하지만 복잡한 쿼리를 필요로 할 때에는 MyBatis와 JPA를 섞어서 사용해야 한다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
